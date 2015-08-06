@@ -597,6 +597,9 @@
     <ClCompile Include="..\src\downsample.c">
       <Filter>Effect Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\dsdiff.c">
+      <Filter>Format Sources</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\dsf.c">
       <Filter>Format Sources</Filter>
     </ClCompile>

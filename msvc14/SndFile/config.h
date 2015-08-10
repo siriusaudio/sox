@@ -22,11 +22,15 @@ typedef __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int16 uint16_t;
 #define ptrdiff_t ssize_t
-#define snprintf _snprintf
 #define __func__ __FUNCTION__
 #define FLAC__NO_DLL
+#if _MSC_VER < 1800
 #define lrint(f)  ((long)(f))
 #define lrintf(f) lrint(f)
+#endif
+#if _MSC_VER < 1900
+#define snprintf _snprintf
+#endif
 
 /* Set to 1 if the compile is GNU GCC. */
 #undef COMPILER_IS_GCC

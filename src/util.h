@@ -184,6 +184,26 @@
 #define field_offset(type, field) ((size_t)&(((type *)0)->field))
 #define unless(x) if (!(x))
 
+/*----------------------------- Data alignment -------------------------------*/
+
+#ifdef __GNUC__
+#define LSX_ALIGN(n) __attribute__((aligned(n)))
+#elif defined _MSC_VER
+#define LSX_ALIGN(n) __declspec(align(n))
+#else
+#define LSX_ALIGN(n)
+#endif
+
+#ifdef HAVE_ALIGNED_ALLOC
+  #define aligned_free(p) free(p)
+#elif defined _MSC_VER
+  #define aligned_alloc(a, s) _aligned_malloc(s, a)
+  #define aligned_free(p) _aligned_free(p)
+#else
+  #define aligned_alloc(a, s) malloc(s)
+  #define aligned_free(p) free(p)
+#endif
+
 /*------------------------------- Maths stuff --------------------------------*/
 
 #include <math.h>

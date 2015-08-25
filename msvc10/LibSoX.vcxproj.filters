@@ -603,5 +603,8 @@
     <ClCompile Include="..\src\dsf.c">
       <Filter>Format Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\sdm.c">
+      <Filter>Effect Sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

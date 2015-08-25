@@ -2012,6 +2012,10 @@ option is not given, then the pseudo-random number generator used to
 generate the white noise will be `reseeded', i.e. the generated noise
 will be different between invocations.
 .SP
+If the target precision is 1-bit, the \fBsdm\fR effect is applied
+automatically with default settings. Invoke it manually to control its
+options.
+.SP
 This effect should not be followed by any other effect that
 affects the audio.
 .SP
@@ -2990,6 +2994,41 @@ Apply RIAA vinyl playback equalisation.
 The sampling rate must be one of: 44\*d1, 48, 88\*d2, 96 kHz.
 .SP
 This effect supports the \fB\-\-plot\fR global option.
+.TP
+\fBsdm\fR [\fB\-f \fIfilter\fR] [\fB\-t \fIorder\fR] [\fB\-n \fInum\fR] [\fB-l \fIlatency\fR]
+Apply a 1-bit sigma-delta modulator producing DSD output.  The input
+should be previously upsampled, e.g. with the \fBrate\fR effect, to a
+high rate, 2\*d8224MHz for DSD64.  The \fB\-f\fR option selects the
+noise-shaping filter from the following list:
+.RS
+.IP \fBfast\fR
+Reasonably good quality while fast enough for real-time operation.
+This is the default.
+.IP \fBhq\fR
+Lower noise and distortion than \fBfast\fR at the expense of being
+much slower.
+.IP \fBaudiophile\fR
+Somewhat better quality than \fBhq\fR and almost twice as slow.
+.IP \fBgoldenear\fR
+Slightly higher quality than \fBaudiophile\fR and considerably slower.
+.RE
+.TP
+\ 
+All but the \fBfast\fR filter perform a partial trellis/viterbi search
+with preset parameters which can be overridden using the following
+options:
+.RS
+.IP \fB\-t \fIorder\fR
+Set the trellis order, max 32.
+.IP \fB\-n \fInum\fR
+Set the number of paths to consider, max 32.
+.IP \fB\-n \fIlatency\fR
+Set the output latency, max 2048.
+.RE
+.TP
+\ 
+The result of using these overrides is hard to predict and can include
+high noise levels or instability.  Caution is advised.
 .TP
 \fBsilence \fR[\fB\-l\fR] \fIabove-periods\fR [\fIduration threshold\fR[\fBd\fR\^|\^\fB%\fR]
 [\fIbelow-periods duration threshold\fR[\fBd\fR\^|\^\fB%\fR]]

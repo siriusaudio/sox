@@ -170,10 +170,6 @@ if test "$GCC" = "yes"; then
 
     CFLAGS="$CFLAGS -Wall -W -Wmissing-prototypes -Wstrict-prototypes -pedantic"
 
-    AS_VERSION_COMPARE([$gccver], [4.3],
-       [WARN_CFLAGS="-Wconversion"],
-       [WARN_CFLAGS="-Wtraditional-conversion"],
-       [WARN_CFLAGS="-Wtraditional-conversion"])
     dnl Define stricter policy on GNU/Linux, all symbols must be resolved
     case $target in
       *linux* | *solaris*)

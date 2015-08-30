@@ -127,6 +127,11 @@ libsox_la_SOURCES += raw-fmt.c s1-fmt.c s2-fmt.c s3-fmt.c \
 libsox_la_LIBADD += @GSM_LIBS@ @LIBGSM_LIBADD@
 libsox_la_LIBADD += @LPC10_LIBS@ @LIBLPC10_LIBADD@
 
+if HAVE_ID3TAG
+  libsox_la_SOURCES += id3.c id3.h
+  libsox_la_LIBADD += @ID3_LIBS@
+endif
+
 pkglib_LTLIBRARIES =
 
 include optional-fmts.am

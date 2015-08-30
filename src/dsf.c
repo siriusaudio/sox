@@ -22,6 +22,7 @@
  */
 
 #include "sox_i.h"
+#include "id3.h"
 
 struct dsf {
 	uint64_t file_size;
@@ -130,6 +131,13 @@ static int dsf_startread(sox_format_t *ft)
 	dsf->block = lsx_calloc(dsf->chan_num, (size_t)dsf->block_size);
 	if (!dsf->block)
 		return SOX_ENOMEM;
+
+	if (dsf->metadata && ft->seekable) {
+		off_t pos = lsx_tell(ft);
+		if (!lsx_seeki(ft, dsf->metadata, SEEK_SET))
+			lsx_id3_read_tag(ft, sox_false);
+		lsx_seeki(ft, pos, SEEK_SET);
+	}
 
 	dsf->block_pos = dsf->block_size;
 

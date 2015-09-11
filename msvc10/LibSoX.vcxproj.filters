@@ -213,6 +213,9 @@
     <ClCompile Include="..\src\divide.c">
       <Filter>Effect Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\dop.c">
+      <Filter>Effect Sources</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\earwax.c">
       <Filter>Effect Sources</Filter>
     </ClCompile>

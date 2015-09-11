@@ -207,6 +207,7 @@
     <ClCompile Include="..\src\dft_filter.c" />
     <ClCompile Include="..\src\dither.c" />
     <ClCompile Include="..\src\divide.c" />
+    <ClCompile Include="..\src\dop.c" />
     <ClCompile Include="..\src\downsample.c" />
     <ClCompile Include="..\src\earwax.c" />
     <ClCompile Include="..\src\echo.c" />

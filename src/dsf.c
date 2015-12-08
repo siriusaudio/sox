@@ -21,7 +21,6 @@
  * http://dsd-guide.com/sites/default/files/white-papers/DSFFileFormatSpec_E.pdf
  */
 
-#include <stdint.h>
 #include "sox_i.h"
 
 struct dsf {

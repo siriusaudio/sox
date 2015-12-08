@@ -21,7 +21,6 @@
  * http://dsd-guide.com/sites/default/files/white-papers/DSDIFF_1.5_Spec.pdf
  */
 
-#include <stdint.h>
 #include "sox_i.h"
 
 struct dsdiff {

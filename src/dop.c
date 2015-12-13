@@ -84,8 +84,10 @@ static int dop_flow(sox_effect_t *eff, const sox_sample_t *ibuf,
     ilen -= n;
     p->pos += n;
     if (p->pos == 16) {
-      for (i = 0; i < channels; i++)
+      for (i = 0; i < channels; i++) {
         *out++ = p->buf[i] | p->marker << 24;
+        p->buf[i] = 0;
+      }
       olen--;
       p->marker ^= 0xff;
       p->pos = 0;
@@ -104,13 +106,15 @@ static int dop_flow(sox_effect_t *eff, const sox_sample_t *ibuf,
   if (olen && ilen < 16) {
     size_t n = min(16 - p->pos, ilen);
     for (i = 0; i < channels; i++)
-      p->buf[i] |= dop_load_bits(in, channels, p->pos, n);
+      p->buf[i] |= dop_load_bits(in + i, channels, p->pos, n);
     in += n * channels;
     ilen -= n;
     p->pos += n;
     if (p->pos == 16) {
-      for (i = 0; i < channels; i++)
+      for (i = 0; i < channels; i++) {
         *out++ = p->buf[i] | p->marker << 24;
+        p->buf[i] = 0;
+      }
       olen--;
       p->marker ^= 0xff;
       p->pos = 0;
@@ -131,6 +135,7 @@ static int dop_drain(sox_effect_t *eff, sox_sample_t *obuf, size_t *osamp)
   if (p->pos) {
     for (i = 0; i < eff->in_signal.channels; i++)
       *obuf++ = p->buf[i] | p->marker << 24;
+    p->pos = 0;
     *osamp = i;
   } else {
     *osamp = 0;

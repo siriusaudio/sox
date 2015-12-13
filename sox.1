@@ -2543,7 +2543,7 @@ Non linear distortion.
 The \fIcolour\fR parameter controls the amount of even harmonic content
 in the over-driven output.
 .TP
-\fBpad\fR { \fIlength\fR[\fB@\fIposition(=)\fR] }
+\fBpad\fR { \fI[%]length\fR[\fB@\fIposition(=)\fR] }
 Pad the audio with silence, at the beginning, the end, or any
 specified points through the audio.
 .I length
@@ -2563,6 +2563,11 @@ adds 1\*d5 seconds of silence padding at each end of the audio, whilst
 inserts 4000 samples of silence 3 minutes into the audio.
 If silence is wanted only at the end of the audio, specify either the end
 position or specify a zero-length pad at the start.
+.SP
+If a pad specification starts with with a % sign, the output is padded
+to a multiple of \fIlength\fR at the specified position. For example,
+\fBpad 0 %10\fR adds silence at the end of the audio up to the next
+multiple of 10 seconds.
 .SP
 See also
 .B delay

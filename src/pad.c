@@ -32,6 +32,11 @@ typedef struct {
   uint64_t pad_pos; /* Number of samples through the current pad */
 } priv_t;
 
+static uint64_t pad_align(uint64_t pos, uint64_t align)
+{
+  return (align - pos % align) % align;
+}
+
 static int parse(sox_effect_t * effp, char * * argv, sox_rate_t rate)
 {
   priv_t * p = (priv_t *)effp->priv;
@@ -71,7 +76,7 @@ static int parse(sox_effect_t * effp, char * * argv, sox_rate_t rate)
     if (!argv) {
       if (p->pads[i].align && p->pads[i].start != UINT64_MAX) {
         p->pads[i].pad =
-          (p->pads[i].align - (p->pads[i].start + pad_len)) % p->pads[i].align;
+          pad_align(p->pads[i].start + pad_len, p->pads[i].align);
         p->pads[i].align = 0;
       }
 
@@ -172,7 +177,7 @@ static int drain(sox_effect_t * effp, sox_sample_t * obuf, size_t * osamp)
   if (p->pads_pos != p->npads && p->in_pos != p->pads[p->pads_pos].start) {
     if (p->pads[p->pads_pos].align)
       p->pads[p->pads_pos].pad =
-        (p->pads[p->pads_pos].align - p->out_pos) % p->pads[p->pads_pos].align;
+        pad_align(p->pads[p->pads_pos].align, p->pads[p->pads_pos].align);
     p->in_pos = UINT64_MAX;  /* Invoke the final pad (with no given start) */
   }
   return flow(effp, 0, obuf, &isamp, osamp);

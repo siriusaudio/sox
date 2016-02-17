@@ -3010,33 +3010,28 @@ should be previously upsampled, e.g. with the \fBrate\fR effect, to a
 high rate, 2\*d8224MHz for DSD64.  The \fB\-f\fR option selects the
 noise-shaping filter from the following list:
 .RS
+.IP \fBsafe\fR
+Fast, stable default.
 .IP \fBfast\fR
-Reasonably good quality while fast enough for real-time operation.
-This is the default.
+Higher quality than \fBsafe\fR, may become unstable with extreme inputs.
 .IP \fBhq\fR
-Lower noise and distortion than \fBfast\fR at the expense of being
-much slower.
-.IP \fBaudiophile\fR
-Somewhat better quality than \fBhq\fR and almost twice as slow.
-.IP \fBgoldenear\fR
-Slightly higher quality than \fBaudiophile\fR and considerably slower.
+Higher quality and somewhat slower than \fBfast\fR.
 .RE
 .TP
 \ 
-All but the \fBfast\fR filter perform a partial trellis/viterbi search
-with preset parameters which can be overridden using the following
-options:
+The noise filter may be combined with a partial trellis/viterbi search
+by supplying the following options:
 .RS
 .IP \fB\-t \fIorder\fR
-Set the trellis order, max 32.
+Trellis order, max 32.
 .IP \fB\-n \fInum\fR
-Set the number of paths to consider, max 32.
-.IP \fB\-n \fIlatency\fR
-Set the output latency, max 2048.
+Number of paths to consider, max 32.
+.IP \fB\-l \fIlatency\fR
+Output latency, max 2048.
 .RE
 .TP
 \ 
-The result of using these overrides is hard to predict and can include
+The result of using these parameters is hard to predict and can include
 high noise levels or instability.  Caution is advised.
 .TP
 \fBsilence \fR[\fB\-l\fR] \fIabove-periods\fR [\fIduration threshold\fR[\fBd\fR\^|\^\fB%\fR]

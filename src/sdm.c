@@ -608,7 +608,7 @@ static int getopts(sox_effect_t *effp, int argc, char **argv)
 
   while ((c = lsx_getopt(&optstate)) != -1) switch (c) {
     case 'f': p->filter_name = optstate.arg; break;
-    GETOPT_NUMERIC(optstate, 't', trellis_num, 8, SDM_TRELLIS_MAX_ORDER)
+    GETOPT_NUMERIC(optstate, 't', trellis_order, 8, SDM_TRELLIS_MAX_ORDER)
     GETOPT_NUMERIC(optstate, 'n', trellis_num, 8, SDM_TRELLIS_MAX_NUM)
     GETOPT_NUMERIC(optstate, 'l', trellis_lat, 100, SDM_TRELLIS_MAX_LAT)
     default: lsx_fail("invalid option `-%c'", optstate.opt); return lsx_usage(effp);

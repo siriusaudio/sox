@@ -28,6 +28,7 @@
 typedef struct sdm sdm_t;
 
 sdm_t *sdm_init(const char *filter_name,
+                unsigned freq,
                 unsigned trellis_order,
                 unsigned trellis_num,
                 unsigned trellis_latency);

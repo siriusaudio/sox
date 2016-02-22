@@ -46,6 +46,7 @@ typedef struct {
   const double  a[MAX_FILTER_ORDER];
   const double  g[MAX_FILTER_ORDER];
   int32_t       order;
+  unsigned      freq;
   const char   *name;
   int           trellis_order;
   int           trellis_num;
@@ -99,6 +100,7 @@ static sdm_filter_t sdm_filter_fast = {
     1.52852264942192e-03, 0, 2.22035724073886e-03, 0,
   },
   8,
+  64 * 44100,
   "fast",
   0, 0, 0,
 };
@@ -115,6 +117,7 @@ static sdm_filter_t sdm_filter_hq = {
     0, 2.16898568341885e-03, 0,
   },
   7,
+  64 * 44100,
   "hq",
   16,
   10,
@@ -133,6 +136,7 @@ static sdm_filter_t sdm_filter_audiophile = {
     0, 2.16898568341885e-03, 0,
   },
   7,
+  64 * 44100,
   "audiophile",
   24,
   16,
@@ -151,6 +155,7 @@ static sdm_filter_t sdm_filter_goldenear = {
     0, 2.16898568341885e-03, 0,
   },
   7,
+  64 * 44100,
   "goldenear",
   24,
   24,
@@ -165,16 +170,14 @@ static const sdm_filter_t *sdm_filters[] = {
   NULL,
 };
 
-static const sdm_filter_t *sdm_find_filter(const char *name)
+static const sdm_filter_t *sdm_find_filter(const char *name, unsigned freq)
 {
   int i;
 
-  if (!name)
-    return sdm_filters[0];
-
   for (i = 0; sdm_filters[i]; i++)
-    if (!strcmp(name, sdm_filters[i]->name))
-      return sdm_filters[i];
+    if (!name || !strcmp(name, sdm_filters[i]->name))
+      if (sdm_filters[i]->freq <= freq)
+        return sdm_filters[i];
 
   return NULL;
 }
@@ -507,6 +510,7 @@ int sdm_drain(sdm_t *p, sox_sample_t *obuf, size_t *olen)
 }
 
 sdm_t *sdm_init(const char *filter_name,
+                unsigned freq,
                 unsigned trellis_order,
                 unsigned trellis_num,
                 unsigned trellis_latency)
@@ -537,7 +541,7 @@ sdm_t *sdm_init(const char *filter_name,
 
   memset(p, 0, sizeof(*p));
 
-  p->filter = sdm_find_filter(filter_name);
+  p->filter = sdm_find_filter(filter_name, freq);
   if (!p->filter) {
     lsx_fail("invalid filter name `%s'", filter_name);
     return NULL;
@@ -615,8 +619,8 @@ static int start(sox_effect_t *effp)
 {
   sdm_effect_t *p = effp->priv;
 
-  p->sdm = sdm_init(p->filter_name, p->trellis_order,
-                    p->trellis_num, p->trellis_lat);
+  p->sdm = sdm_init(p->filter_name, effp->in_signal.rate,
+                    p->trellis_order, p->trellis_num, p->trellis_lat);
   if (!p->sdm)
     return SOX_EOF;
 

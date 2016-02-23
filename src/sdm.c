@@ -46,7 +46,6 @@ typedef struct {
   const double  a[MAX_FILTER_ORDER];
   const double  g[MAX_FILTER_ORDER];
   int32_t       order;
-  double        scale;
   const char   *name;
   int           trellis_order;
   int           trellis_num;
@@ -100,7 +99,6 @@ static sdm_filter_t sdm_filter_fast = {
     1.52852264942192e-03, 0, 2.22035724073886e-03, 0,
   },
   8,
-  0.492,
   "fast",
   0, 0, 0,
 };
@@ -117,7 +115,6 @@ static sdm_filter_t sdm_filter_hq = {
     0, 2.16898568341885e-03, 0,
   },
   7,
-  0.50,
   "hq",
   16,
   10,
@@ -136,7 +133,6 @@ static sdm_filter_t sdm_filter_audiophile = {
     0, 2.16898568341885e-03, 0,
   },
   7,
-  0.50,
   "audiophile",
   24,
   16,
@@ -155,7 +151,6 @@ static sdm_filter_t sdm_filter_goldenear = {
     0, 2.16898568341885e-03, 0,
   },
   7,
-  0.50,
   "goldenear",
   24,
   24,
@@ -460,7 +455,6 @@ int sdm_process(sdm_t *p, const sox_sample_t *ibuf, sox_sample_t *obuf,
 {
   sox_sample_t *out = obuf;
   size_t len = *ilen = min(*ilen, *olen);
-  double scale = p->filter->scale;
   double x;
 
   if (p->trellis_mask) {
@@ -469,17 +463,17 @@ int sdm_process(sdm_t *p, const sox_sample_t *ibuf, sox_sample_t *obuf,
       p->pending += pre;
       len -= pre;
       while (pre--) {
-        x = *ibuf++ * scale * (1.0 / SOX_SAMPLE_MAX);
+        x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
         sdm_sample_trellis(p, x);
       }
     }
     while (len--) {
-      x = *ibuf++ * scale * (1.0 / SOX_SAMPLE_MAX);
+      x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
       *out++ = sdm_sample_trellis(p, x);
     }
   } else {
     while (len--) {
-      x = *ibuf++ * scale * (1.0 / SOX_SAMPLE_MAX);
+      x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
       *out++ = sdm_sample(p, x);
     }
   }

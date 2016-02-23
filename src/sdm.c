@@ -447,7 +447,7 @@ static sox_sample_t sdm_sample(sdm_t *p, double x)
   double y, v;
 
   v = sdm_filter_calc(s0, s1, f, x, p->prev_y);
-  y = sign(v);
+  y = signbit(v) ? -1.0 : 1.0;
 
   p->idx ^= 1;
   p->prev_y = y;

@@ -3008,15 +3008,15 @@ This effect supports the \fB\-\-plot\fR global option.
 Apply a 1-bit sigma-delta modulator producing DSD output.  The input
 should be previously upsampled, e.g. with the \fBrate\fR effect, to a
 high rate, 2\*d8224MHz for DSD64.  The \fB\-f\fR option selects the
-noise-shaping filter from the following list:
-.RS
-.IP \fBsafe\fR
-Fast, stable default.
-.IP \fBfast\fR
-Higher quality than \fBsafe\fR, may become unstable with extreme inputs.
-.IP \fBhq\fR
-Higher quality and somewhat slower than \fBfast\fR.
-.RE
+noise-shaping filter from the following list where the number indicates
+the order of the filter:
+.EX
+   clans-4      sdm-4
+   clans-5      sdm-5
+   clans-6      sdm-6
+   clans-7      sdm-7
+   clans-8      sdm-8
+.EE
 .TP
 \ 
 The noise filter may be combined with a partial trellis/viterbi search

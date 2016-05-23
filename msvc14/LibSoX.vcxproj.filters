@@ -609,5 +609,8 @@
     <ClCompile Include="..\src\sdm.c">
       <Filter>Effect Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\id3.c">
+      <Filter>Format Sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

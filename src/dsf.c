@@ -281,8 +281,9 @@ static void dsf_write_bits(struct dsf *dsf, const sox_sample_t *buf,
 	for (i = 0; i < dsf->chan_num; i++) {
 		unsigned d = dsd[i * dsf->block_size];
 
-		for (j = start_bit; j < start_bit + len; j++) {
-			d |= (buf[i + j * dsf->chan_num] > 0) << j;
+		for (j = 0; j < len; j++) {
+			d |= (buf[i + j * dsf->chan_num] > 0) <<
+				(j + start_bit);
 		}
 
 		dsd[i * dsf->block_size] = d;

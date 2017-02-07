@@ -133,8 +133,9 @@ static int dop_drain(sox_effect_t *eff, sox_sample_t *obuf, size_t *osamp)
   unsigned i;
 
   if (p->pos) {
+    unsigned silence = (0xffff00 >> p->pos) & 0x696900;
     for (i = 0; i < eff->in_signal.channels; i++)
-      *obuf++ = p->buf[i] | p->marker << 24;
+      *obuf++ = p->buf[i] | p->marker << 24 | silence;
     p->pos = 0;
     *osamp = i;
   } else {

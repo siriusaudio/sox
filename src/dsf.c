@@ -36,6 +36,7 @@ struct dsf {
 	uint64_t scount;
 	uint32_t block_size;
 
+	uint32_t block_start;
 	uint32_t block_pos;
 	uint32_t bit_pos;
 	uint8_t *block;
@@ -132,14 +133,16 @@ static int dsf_startread(sox_format_t *ft)
 	if (!dsf->block)
 		return SOX_ENOMEM;
 
+	ft->data_start = lsx_tell(ft);
+
 	if (dsf->metadata && ft->seekable) {
-		off_t pos = lsx_tell(ft);
 		if (!lsx_seeki(ft, dsf->metadata, SEEK_SET))
 			lsx_id3_read_tag(ft, sox_false);
-		lsx_seeki(ft, pos, SEEK_SET);
+		lsx_seeki(ft, ft->data_start, SEEK_SET);
 	}
 
 	dsf->block_pos = dsf->block_size;
+	dsf->block_start = 0;
 
 	ft->signal.rate = dsf->sfreq;
 	ft->signal.channels = dsf->chan_num;
@@ -152,13 +155,14 @@ static int dsf_startread(sox_format_t *ft)
 	return SOX_SUCCESS;
 }
 
-static void dsf_read_bits(struct dsf *dsf, sox_sample_t *buf, unsigned len)
+static void dsf_read_bits(struct dsf *dsf, sox_sample_t *buf,
+                          unsigned start, unsigned len)
 {
 	uint8_t *dsd = dsf->block + dsf->block_pos;
 	unsigned i, j;
 
 	for (i = 0; i < dsf->chan_num; i++) {
-		unsigned d = dsd[i * dsf->block_size];
+		unsigned d = dsd[i * dsf->block_size] >> start;
 
 		for (j = 0; j < len; j++) {
 			buf[i + j * dsf->chan_num] = d & 1 ?
@@ -178,28 +182,61 @@ static size_t dsf_read(sox_format_t *ft, sox_sample_t *buf, size_t len)
 	len = min(len, samp_left);
 
 	while (len >= 8) {
+		unsigned bits = 8 - dsf->bit_pos;
+
 		if (dsf->block_pos >= dsf->block_size) {
 			size_t rlen = dsf->chan_num * dsf->block_size;
 			if (lsx_read_b_buf(ft, dsf->block, rlen) < rlen)
 				return rsamp * dsf->chan_num;
-			dsf->block_pos = 0;
+			dsf->block_pos = dsf->block_start;
+			dsf->block_start = 0;
 		}
 
-		dsf_read_bits(dsf, buf, 8);
-		buf += 8 * dsf->chan_num;
+		dsf_read_bits(dsf, buf, dsf->bit_pos, bits);
+		buf += bits * dsf->chan_num;
 		dsf->block_pos++;
-		rsamp += 8;
-		len -= 8;
+		dsf->bit_pos = 0;
+		rsamp += bits;
+		len -= bits;
 	}
 
 	if (len && samp_left < 8) {
-		dsf_read_bits(dsf, buf, (unsigned)len);
+		dsf_read_bits(dsf, buf, 0, len);
 		rsamp += len;
 	}
 
 	dsf->read_samp += rsamp;
 
 	return rsamp * dsf->chan_num;
+}
+
+static int dsf_seek(sox_format_t * ft, sox_uint64_t offset)
+{
+	struct dsf *dsf = ft->priv;
+	uint64_t byte_offset;
+	uint64_t block_num;
+	unsigned block_start;
+        off_t data_offs;
+	int err;
+
+	if (offset > dsf->scount)
+		return SOX_EOF;
+
+	byte_offset = offset / 8;
+	block_num = byte_offset / dsf->block_size;
+	block_start = byte_offset % dsf->block_size;
+	data_offs = dsf->chan_num * dsf->block_size * block_num;
+
+	err = lsx_seeki(ft, ft->data_start + data_offs, SEEK_SET);
+	if (err != SOX_SUCCESS)
+		return err;
+
+	dsf->block_pos = dsf->block_size;
+	dsf->block_start = block_start;;
+	dsf->bit_pos = offset % 8;
+	dsf->read_samp = offset;
+
+	return SOX_SUCCESS;
 }
 
 static int dsf_stopread(sox_format_t *ft)
@@ -379,7 +416,7 @@ LSX_FORMAT_HANDLER(dsf)
 		names, SOX_FILE_LIT_END,
 		dsf_startread, dsf_read, dsf_stopread,
 		dsf_startwrite, dsf_write, dsf_stopwrite,
-		NULL, write_encodings, NULL,
+		dsf_seek, write_encodings, NULL,
 		sizeof(struct dsf)
 	};
 	return &handler;

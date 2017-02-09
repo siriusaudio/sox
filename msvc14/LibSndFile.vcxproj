@@ -115,7 +115,6 @@
     <ClCompile Include="..\..\libsndfile\src\ima_oki_adpcm.c" />
     <ClCompile Include="..\..\libsndfile\src\interleave.c" />
     <ClCompile Include="..\..\libsndfile\src\ircam.c" />
-    <ClCompile Include="..\..\libsndfile\src\macbinary3.c" />
     <ClCompile Include="..\..\libsndfile\src\macos.c" />
     <ClCompile Include="..\..\libsndfile\src\mat4.c" />
     <ClCompile Include="..\..\libsndfile\src\mat5.c" />

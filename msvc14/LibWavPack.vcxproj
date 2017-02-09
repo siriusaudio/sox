@@ -94,17 +94,28 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\wavpack\src\bits.c" />
+    <ClCompile Include="..\..\wavpack\src\common_utils.c" />
+    <ClCompile Include="..\..\wavpack\src\decorr_utils.c" />
+    <ClCompile Include="..\..\wavpack\src\entropy_utils.c" />
     <ClCompile Include="..\..\wavpack\src\extra1.c" />
     <ClCompile Include="..\..\wavpack\src\extra2.c" />
-    <ClCompile Include="..\..\wavpack\src\float.c" />
-    <ClCompile Include="..\..\wavpack\src\metadata.c" />
+    <ClCompile Include="..\..\wavpack\src\open_utils.c" />
+    <ClCompile Include="..\..\wavpack\src\open_legacy.c" />
     <ClCompile Include="..\..\wavpack\src\pack.c" />
+    <ClCompile Include="..\..\wavpack\src\pack_dns.c" />
+    <ClCompile Include="..\..\wavpack\src\pack_floats.c" />
+    <ClCompile Include="..\..\wavpack\src\pack_utils.c" />
+    <ClCompile Include="..\..\wavpack\src\read_words.c" />
     <ClCompile Include="..\..\wavpack\src\tags.c" />
+    <ClCompile Include="..\..\wavpack\src\tag_utils.c" />
     <ClCompile Include="..\..\wavpack\src\unpack.c" />
+    <ClCompile Include="..\..\wavpack\src\unpack_floats.c" />
+    <ClCompile Include="..\..\wavpack\src\unpack_seek.c" />
+    <ClCompile Include="..\..\wavpack\src\unpack_utils.c" />
     <ClCompile Include="..\..\wavpack\src\unpack3.c" />
-    <ClCompile Include="..\..\wavpack\src\words.c" />
-    <ClCompile Include="..\..\wavpack\src\wputils.c" />
+    <ClCompile Include="..\..\wavpack\src\unpack3_open.c" />
+    <ClCompile Include="..\..\wavpack\src\unpack3_seek.c" />
+    <ClCompile Include="..\..\wavpack\src\write_words.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\wavpack\src\unpack3.h" />

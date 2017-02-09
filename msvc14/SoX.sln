@@ -37,6 +37,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibSndFile", "LibSndFile.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibSpeex", "LibSpeex.vcxproj", "{60902B83-8B26-4DBD-B635-4CECF5F4744C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibSpeexDsp", "LibSpeexDsp.vcxproj", "{BF1A8B37-E85A-4467-B9B6-D207DF189F4C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -111,6 +113,10 @@ Global
 		{60902B83-8B26-4DBD-B635-4CECF5F4744C}.Debug|Win32.Build.0 = Debug|Win32
 		{60902B83-8B26-4DBD-B635-4CECF5F4744C}.Release|Win32.ActiveCfg = Release|Win32
 		{60902B83-8B26-4DBD-B635-4CECF5F4744C}.Release|Win32.Build.0 = Release|Win32
+		{BF1A8B37-E85A-4467-B9B6-D207DF189F4C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BF1A8B37-E85A-4467-B9B6-D207DF189F4C}.Debug|Win32.Build.0 = Debug|Win32
+		{BF1A8B37-E85A-4467-B9B6-D207DF189F4C}.Release|Win32.ActiveCfg = Release|Win32
+		{BF1A8B37-E85A-4467-B9B6-D207DF189F4C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

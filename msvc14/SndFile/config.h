@@ -32,6 +32,10 @@ typedef unsigned __int16 uint16_t;
 #define snprintf _snprintf
 #endif
 
+#define R_OK 4
+#define W_OK 2
+#define X_OK 0
+
 /* Set to 1 if the compile is GNU GCC. */
 #undef COMPILER_IS_GCC
 

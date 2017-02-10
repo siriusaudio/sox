@@ -141,6 +141,8 @@ static int dff_startread(sox_format_t *ft)
 	if (!dff->buf)
 		return SOX_ENOMEM;
 
+	ft->data_start = lsx_tell(ft);
+
 	ft->signal.rate = dff->sample_rate;
 	ft->signal.channels = dff->num_channels;
 	ft->signal.precision = 1;
@@ -162,11 +164,13 @@ static size_t dff_read(sox_format_t *ft, sox_sample_t *buf, size_t len)
 	len /= nc;
 
 	while (len >= 8) {
+		unsigned bits = 8 - dff->bit_pos;
+
 		if (lsx_read_b_buf(ft, dff->buf, nc) < nc)
 			return rsamp * nc;
 
 		for (i = 0; i < nc; i++) {
-			unsigned d = dff->buf[i];
+			unsigned d = dff->buf[i] << dff->bit_pos;
 
 			for (j = 0; j < 8; j++) {
 				buf[i + j * nc] = d & 128 ?
@@ -175,12 +179,29 @@ static size_t dff_read(sox_format_t *ft, sox_sample_t *buf, size_t len)
 			}
 		}
 
-		buf += 8 * nc;
-		rsamp += 8;
-		len -= 8;
+		dff->bit_pos = 0;
+		buf += bits * nc;
+		rsamp += bits;
+		len -= bits;
 	}
 
 	return rsamp * nc;
+}
+
+static int dff_seek(sox_format_t * ft, sox_uint64_t offset)
+{
+	struct dsdiff *dff = ft->priv;
+	uint64_t byte_offset = offset / 8;
+	uint64_t data_offset = byte_offset * ft->signal.channels;
+	int err;
+
+	err = lsx_seeki(ft, ft->data_start + data_offset, SEEK_SET);
+	if (err != SOX_SUCCESS)
+		return err;
+
+	dff->bit_pos = offset % 8;
+
+	return SOX_SUCCESS;
 }
 
 static int dff_stopread(sox_format_t *ft)
@@ -408,7 +429,7 @@ LSX_FORMAT_HANDLER(dsdiff)
 		names, SOX_FILE_BIG_END,
 		dff_startread, dff_read, dff_stopread,
 		dff_startwrite, dff_write, dff_stopwrite,
-		NULL, write_encodings, NULL,
+		dff_seek, write_encodings, NULL,
 		sizeof(struct dsdiff)
 	};
 	return &handler;

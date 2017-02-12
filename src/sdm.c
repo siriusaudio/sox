@@ -42,7 +42,7 @@
 #define PATH_HASH_SIZE 128
 #define PATH_HASH_MASK (PATH_HASH_SIZE - 1)
 
-typedef struct {
+typedef struct LSX_ALIGN(32) sdm_filter {
   const double  a[MAX_FILTER_ORDER];
   const double  g[MAX_FILTER_ORDER];
   int32_t       order;
@@ -51,9 +51,9 @@ typedef struct {
   int           trellis_order;
   int           trellis_num;
   int           trellis_lat;
-} LSX_ALIGN(32) sdm_filter_t;
+} sdm_filter_t;
 
-typedef struct sdm_state {
+typedef struct LSX_ALIGN(32) sdm_state {
   double        state[MAX_FILTER_ORDER];
   double        cost;
   uint32_t      path;
@@ -62,7 +62,7 @@ typedef struct sdm_state {
   uint8_t       hist_used;
   struct sdm_state *parent;
   struct sdm_state *path_list;
-} LSX_ALIGN(32) sdm_state_t;
+} sdm_state_t;
 
 typedef struct {
   sdm_state_t   sdm[2 * SDM_TRELLIS_MAX_NUM];

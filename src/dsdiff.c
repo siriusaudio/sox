@@ -24,8 +24,6 @@
 #include "sox_i.h"
 
 struct dsdiff {
-	uint32_t sample_rate;
-	uint16_t num_channels;
 	uint64_t data_size;
 	uint8_t *buf;
 	uint32_t bit_pos;
@@ -42,6 +40,8 @@ static int dff_startread(sox_format_t *ft)
 	uint64_t f8size;
 	uint32_t fver;
 	uint64_t spos, epos;
+	uint32_t sample_rate;
+	uint16_t num_channels;
 
 	if (lsx_readdw(ft, &ckid) || ckid != ID('F', 'R', 'M', '8')) {
 		lsx_fail_errno(ft, SOX_EHDR, "FRM8 tag not found");
@@ -90,14 +90,14 @@ static int dff_startread(sox_format_t *ft)
 		case ID('F', 'S', ' ', ' '):
 			if (cksize < 4)
 				return SOX_EHDR;
-			if (lsx_readdw(ft, &dff->sample_rate))
+			if (lsx_readdw(ft, &sample_rate))
 				return SOX_EHDR;
 			break;
 
 		case ID('C', 'H', 'N', 'L'):
 			if (cksize < 4)
 				return SOX_EHDR;
-			if (lsx_readw(ft, &dff->num_channels))
+			if (lsx_readw(ft, &num_channels))
 				return SOX_EHDR;
 			break;
 
@@ -127,7 +127,7 @@ static int dff_startread(sox_format_t *ft)
 			lsx_seeki(ft, (off_t)(spos + cksize - epos), SEEK_CUR);
 	} while (cksize && epos < f8size);
 
-	if (!dff->sample_rate || !dff->num_channels || !dff->data_size) {
+	if (!sample_rate || !num_channels || !dff->data_size) {
 		lsx_fail_errno(ft, SOX_EHDR, "invalid file header");
 		return SOX_EHDR;
 	}
@@ -137,14 +137,14 @@ static int dff_startread(sox_format_t *ft)
 		return SOX_EHDR;
 	}
 
-	dff->buf = lsx_malloc((size_t)dff->num_channels);
+	dff->buf = lsx_malloc(num_channels);
 	if (!dff->buf)
 		return SOX_ENOMEM;
 
 	ft->data_start = lsx_tell(ft);
 
-	ft->signal.rate = dff->sample_rate;
-	ft->signal.channels = dff->num_channels;
+	ft->signal.rate = sample_rate;
+	ft->signal.channels = num_channels;
 	ft->signal.precision = 1;
 	ft->signal.length = dff->data_size * 8;
 
@@ -157,7 +157,7 @@ static int dff_startread(sox_format_t *ft)
 static size_t dff_read(sox_format_t *ft, sox_sample_t *buf, size_t len)
 {
 	struct dsdiff *dff = ft->priv;
-	size_t nc = dff->num_channels;
+	size_t nc = ft->signal.channels;
 	size_t rsamp = 0;
 	unsigned i, j;
 
@@ -219,7 +219,7 @@ static int dff_stopread(sox_format_t *ft)
 static int dff_writeheader(sox_format_t *ft)
 {
 	struct dsdiff *dff = ft->priv;
-	unsigned chnl_size = 2 + 4 * dff->num_channels;
+	unsigned chnl_size = 2 + 4 * ft->signal.channels;
 	unsigned cmpr_size = 4 + 1 + sizeof(DFF_CMPR_NAME);
 	unsigned prop_size =
 		4 +			/* SND */
@@ -250,23 +250,23 @@ static int dff_writeheader(sox_format_t *ft)
 
 	if (lsx_writedw(ft, ID('F', 'S', ' ', ' ')) ||
 	    lsx_writeqw(ft, 4) ||
-            lsx_writedw(ft, dff->sample_rate))
+            lsx_writedw(ft, ft->signal.rate))
 		return SOX_EOF;
 
 	if (lsx_writedw(ft, ID('C', 'H', 'N', 'L')) ||
             lsx_writeqw(ft, chnl_size) ||
-            lsx_writew(ft, dff->num_channels))
+            lsx_writew(ft, ft->signal.channels))
 		return SOX_EOF;
 
-	if (dff->num_channels == 2) {
+	if (ft->signal.channels == 2) {
 		if (lsx_writedw(ft, ID('S', 'L', 'F', 'T')) ||
 		    lsx_writedw(ft, ID('S', 'R', 'G', 'T')))
 			return SOX_EOF;
 	} else {
 		char ch[8];
-		int i;
+		unsigned i;
 
-		for (i = 0; i < dff->num_channels; i++) {
+		for (i = 0; i < ft->signal.channels; i++) {
 			snprintf(ch, sizeof(ch), "C%03d", i);
 			if (lsx_writedw(ft, ID(ch[0], ch[1], ch[2], ch[3])))
 				return SOX_EOF;
@@ -297,10 +297,8 @@ static int dff_startwrite(sox_format_t *ft)
 		return SOX_EOF;
 	}
 
-	dff->sample_rate = ft->signal.rate;
-	dff->num_channels = ft->signal.channels;
 	dff->data_size = 0;
-	dff->buf = lsx_malloc(dff->num_channels);
+	dff->buf = lsx_malloc(ft->signal.channels);
 	if (!dff->buf)
 		return SOX_ENOMEM;
 
@@ -310,7 +308,7 @@ static int dff_startwrite(sox_format_t *ft)
 static int dff_write_buf(sox_format_t *ft)
 {
 	struct dsdiff *dff = ft->priv;
-	size_t wlen = dff->num_channels;
+	size_t wlen = ft->signal.channels;
 
 	if (lsx_write_b_buf(ft, dff->buf, wlen) < wlen)
 		return SOX_EOF;
@@ -321,15 +319,15 @@ static int dff_write_buf(sox_format_t *ft)
 }
 
 static void dff_write_bits(struct dsdiff *dff, const sox_sample_t *buf,
-                           unsigned start_bit, unsigned len)
+                           unsigned channels, unsigned start_bit, unsigned len)
 {
 	unsigned i, j;
 
-	for (i = 0; i < dff->num_channels; i++) {
+	for (i = 0; i < channels; i++) {
 		unsigned d = dff->buf[i];
 
 		for (j = 0; j < len; j++) {
-			d |= (buf[i + j * dff->num_channels] > 0) <<
+			d |= (buf[i + j * channels] > 0) <<
 				(7 - j - start_bit);
 		}
 
@@ -340,7 +338,7 @@ static void dff_write_bits(struct dsdiff *dff, const sox_sample_t *buf,
 static size_t dff_write(sox_format_t *ft, const sox_sample_t *buf, size_t len)
 {
 	struct dsdiff *dff = ft->priv;
-	unsigned nchan = dff->num_channels;
+	unsigned nchan = ft->signal.channels;
 	size_t wsamp = 0;
 
 	len /= nchan;
@@ -348,7 +346,7 @@ static size_t dff_write(sox_format_t *ft, const sox_sample_t *buf, size_t len)
 	if (dff->bit_pos) {
 		unsigned pre = min(len, 8 - dff->bit_pos);
 
-		dff_write_bits(dff, buf, dff->bit_pos, pre);
+		dff_write_bits(dff, buf, nchan, dff->bit_pos, pre);
 
 		dff->bit_pos += pre;
 		buf += pre * nchan;
@@ -361,12 +359,12 @@ static size_t dff_write(sox_format_t *ft, const sox_sample_t *buf, size_t len)
 			if (dff_write_buf(ft))
 				return 0;
 
-			dff->data_size += dff->num_channels;
+			dff->data_size += ft->signal.channels;
 		}
 	}
 
 	while (len >= 8) {
-		dff_write_bits(dff, buf, 0, 8);
+		dff_write_bits(dff, buf, nchan, 0, 8);
 
 		buf += 8 * nchan;
 		wsamp += 8;
@@ -375,11 +373,11 @@ static size_t dff_write(sox_format_t *ft, const sox_sample_t *buf, size_t len)
 		if (dff_write_buf(ft))
 			return wsamp * nchan;
 
-		dff->data_size += dff->num_channels;
+		dff->data_size += ft->signal.channels;
 	}
 
 	if (len) {
-		dff_write_bits(dff, buf, 0, len);
+		dff_write_bits(dff, buf, nchan, 0, len);
 
 		dff->bit_pos = len;
 		wsamp += len;
@@ -396,7 +394,7 @@ static int dff_stopwrite(sox_format_t *ft)
 
 	if (dff->bit_pos) {
 		unsigned silence = 0x69 & (0xff >> dff->bit_pos);
-		for (i = 0; i < dff->num_channels; i++)
+		for (i = 0; i < ft->signal.channels; i++)
 			dff->buf[i] |= silence;
 
 		err = dff_write_buf(ft);

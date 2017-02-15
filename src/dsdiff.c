@@ -432,3 +432,124 @@ LSX_FORMAT_HANDLER(dsdiff)
 	};
 	return &handler;
 }
+
+/*
+ * The WSD format uses the same data layout as DSDIFF with a different
+ * file header.
+ *
+ * http://1bitcons.acoust.ias.sci.waseda.ac.jp/pdf/wsd_file_format_ver1_1.pdf
+ */
+
+#define WSD_MAGIC ID('1', 'b', 'i', 't')
+
+static int wsd_startread(sox_format_t *ft)
+{
+	struct dsdiff *dff = ft->priv;
+	uint32_t magic;
+	uint32_t res32;
+	uint8_t version;
+	uint8_t res8;
+	uint32_t file_sz_l;
+	uint32_t file_sz_h;
+	uint64_t file_sz;
+	uint32_t text_sp;
+	uint32_t data_sp;
+	uint32_t pb_tm;
+	uint32_t fs;
+	uint8_t ch_n;
+	uint32_t ch_asn;
+	uint32_t emph;
+
+	if (lsx_readdw(ft, &magic) || magic != WSD_MAGIC) {
+		lsx_fail_errno(ft, SOX_EHDR, "signature not found");
+		return SOX_EHDR;
+	}
+
+	if (lsx_readdw(ft, &res32) || res32 != 0 ||
+	    lsx_readb(ft, &version) ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readdw(ft, &file_sz_l) ||
+	    lsx_readdw(ft, &file_sz_h) ||
+	    lsx_readdw(ft, &text_sp) ||
+	    lsx_readdw(ft, &data_sp) ||
+	    lsx_readdw(ft, &res32) || res32 != 0) {
+		lsx_fail_errno(ft, SOX_EHDR, "error reading header");
+		return SOX_EHDR;
+	}
+
+	if (version != 0x10 && version != 0x11) {
+		lsx_fail_errno(ft, SOX_EHDR, "unknown format version 0x%02x",
+			       version);
+		return SOX_EHDR;
+	}
+
+	if (text_sp != 0x80 || data_sp != 0x800) {
+		lsx_fail_errno(ft, SOX_EHDR, "incorrect data offset");
+		return SOX_EHDR;
+	}
+
+	file_sz = (uint64_t)file_sz_h << 32 | file_sz_l;
+
+	if (file_sz <= data_sp) {
+		lsx_fail_errno(ft, SOX_EHDR, "invalid file size");
+		return SOX_EHDR;
+	}
+
+	if (lsx_readdw(ft, &pb_tm) ||
+	    lsx_readdw(ft, &fs) ||
+	    lsx_readdw(ft, &res32) || res32 != 0 ||
+	    lsx_readb(ft, &ch_n) ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readb(ft, &res8) || res8 != 0 ||
+	    lsx_readdw(ft, &ch_asn) ||
+	    lsx_readdw(ft, &res32) || res32 != 0 ||
+	    lsx_readdw(ft, &res32) || res32 != 0 ||
+	    lsx_readdw(ft, &res32) || res32 != 0 ||
+	    lsx_readdw(ft, &emph) ||
+	    lsx_readdw(ft, &res32) || res32 != 0) {
+		lsx_fail_errno(ft, SOX_EHDR, "error reading header");
+		return SOX_EHDR;
+	}
+
+	if (emph) {
+		lsx_fail_errno(ft, SOX_EHDR, "invalid emphasis value");
+		return SOX_EHDR;
+	}
+
+	if (lsx_seeki(ft, data_sp, SEEK_SET))
+		return SOX_EOF;
+
+	dff->buf = lsx_malloc(ch_n);
+	if (!dff->buf)
+		return SOX_ENOMEM;
+
+	ft->data_start = data_sp;
+
+	ft->signal.rate = fs;
+	ft->signal.channels = ch_n;
+	ft->signal.precision = 1;
+	ft->signal.length = (file_sz - data_sp) * 8;
+
+	ft->encoding.encoding = SOX_ENCODING_DSD;
+	ft->encoding.bits_per_sample = 1;
+
+	return SOX_SUCCESS;
+}
+
+LSX_FORMAT_HANDLER(wsd)
+{
+	static char const * const names[] = { "wsd", NULL };
+	static sox_format_handler_t const handler = {
+		SOX_LIB_VERSION_CODE,
+		"Wideband Single-bit Data (WSD)",
+		names, SOX_FILE_BIG_END,
+		wsd_startread, dff_read, dff_stopread,
+		NULL, NULL, NULL,
+		dff_seek, NULL, NULL,
+		sizeof(struct dsdiff)
+	};
+	return &handler;
+}

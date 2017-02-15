@@ -62,6 +62,7 @@
   FORMAT(voc)
   FORMAT(vox)
   FORMAT(wav)
+  FORMAT(wsd)
   FORMAT(wve)
   FORMAT(xa)
 

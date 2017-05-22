@@ -24,6 +24,7 @@ static char const * id3tagmap[][2] =
   {"TIT2", "Title"},
   {"TPE1", "Artist"},
   {"TALB", "Album"},
+  {"TCOM", "Composer"},
   {"TRCK", "Tracknumber"},
   {"TDRC", "Year"},
   {"TCON", "Genre"},

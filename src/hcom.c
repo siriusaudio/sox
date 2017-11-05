@@ -150,6 +150,11 @@ static int startread(sox_format_t * ft)
                 lsx_debug("%d %d",
                        p->dictionary[i].dict_leftson,
                        p->dictionary[i].dict_rightson);
+                if ((unsigned) p->dictionary[i].dict_leftson >= dictsize ||
+                    (unsigned) p->dictionary[i].dict_rightson >= dictsize) {
+                        lsx_fail_errno(ft, SOX_EHDR, "Invalid dictionary");
+                        return SOX_EOF;
+                }
         }
         rc = lsx_skipbytes(ft, (size_t) 1); /* skip pad byte */
         if (rc)

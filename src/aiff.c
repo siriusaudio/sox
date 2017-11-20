@@ -63,7 +63,6 @@ int lsx_aiffstartread(sox_format_t * ft)
   size_t ssndsize = 0;
   char *annotation;
   char *author;
-  char *comment = NULL;
   char *copyright;
   char *nametext;
 
@@ -271,6 +270,7 @@ int lsx_aiffstartread(sox_format_t * ft)
       free(annotation);
     }
     else if (strncmp(buf, "COMT", (size_t)4) == 0) {
+      char *comment = NULL;
       rc = commentChunk(&comment, "Comment:", ft);
       if (rc) {
         /* Fail already called in function */

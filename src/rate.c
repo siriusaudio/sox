@@ -224,9 +224,9 @@ static void dft_stage_init(
     int k = phase == 50 && lsx_is_power_of_2(L) && Fn == L? L << 1 : 4;
     double * h = lsx_design_lpf(Fp, Fs, Fn, att, &num_taps, -k, -1.);
 
-    if (phase != 50)
+    //if (phase != 50)
       lsx_fir_to_phase(&h, &num_taps, &f->post_peak, phase);
-    else f->post_peak = num_taps / 2;
+    //else f->post_peak = num_taps / 2;
 
     dft_length = lsx_set_dft_length(num_taps);
     f->coefs = calloc(dft_length, sizeof(*f->coefs));

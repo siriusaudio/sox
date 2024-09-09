@@ -273,13 +273,13 @@ static int flow_effect(sox_effects_chain_t * chain, size_t n)
 #ifdef HAVE_OPENMP_3_1
     #pragma omp parallel for \
         if(sox_globals.use_threads) \
-        schedule(static) default(none) \
+        num_threads(2) schedule(static) default(none) \
         shared(effp,effp1,idone,obeg,obuf,flow_offs,chain,n,effstatus) \
         reduction(min:idone_min,odone_min) reduction(max:idone_max,odone_max)
 #elif defined HAVE_OPENMP
     #pragma omp parallel for \
         if(sox_globals.use_threads) \
-        schedule(static) default(none) \
+        num_threads(2) schedule(static) default(none) \
         shared(effp,effp1,idone,obeg,obuf,flow_offs,chain,n,effstatus) \
         firstprivate(idone_min,odone_min,idone_max,odone_max) \
         lastprivate(idone_min,odone_min,idone_max,odone_max)

@@ -44,11 +44,7 @@
   #define coefs4_check(i) 1
 #endif
 
-#if defined M_PIl
-  #define hi_prec_clock_t long double /* __float128 is also a (slow) option */
-#else
-  #define hi_prec_clock_t double
-#endif
+#define hi_prec_clock_t long double /* __float128 is also a (slow) option */
 
 #define coef(coef_p, interp_order, fir_len, phase_num, coef_interp_num, fir_coef_num) coef_p[(fir_len) * ((interp_order) + 1) * (phase_num) + ((interp_order) + 1) * (fir_coef_num) + (interp_order - coef_interp_num)]
 
@@ -57,11 +53,11 @@ static sample_t * prepare_coefs(raw_coef_t const * coefs, int num_coefs,
 {
   int i, j, length = num_coefs4 * num_phases;
   sample_t * result = malloc(length * (interp_order + 1) * sizeof(*result));
-  double fm1 = coefs[0], f1 = 0, f2 = 0;
+  long double fm1 = coefs[0], f1 = 0, f2 = 0;
 
   for (i = num_coefs4 - 1; i >= 0; --i)
     for (j = num_phases - 1; j >= 0; --j) {
-      double f0 = fm1, b = 0, c = 0, d = 0; /* = 0 to kill compiler warning */
+      long double f0 = fm1, b = 0, c = 0, d = 0; /* = 0 to kill compiler warning */
       int pos = i * num_phases + j - 1;
       fm1 = coefs4_check(i) && pos > 0 ? coefs[pos - 1] * multiplier : 0;
       switch (interp_order) {
@@ -214,8 +210,8 @@ static void dft_stage_fn(stage_t * p, fifo_t * output_fifo)
 }
 
 static void dft_stage_init(
-    unsigned instance, double Fp, double Fs, double Fn, double att,
-    double phase, stage_t * stage, int L, int M)
+    unsigned instance, long double Fp, long double Fs, long double Fn, long double att,
+    long double phase, stage_t * stage, int L, int M)
 {
   dft_filter_t * f = &stage->shared->dft_filter[instance];
   
@@ -237,7 +233,7 @@ static void dft_stage_init(
     f->num_taps = num_taps;
     f->dft_length = dft_length;
     lsx_safe_rdft(dft_length, 1, f->coefs);
-    lsx_debug("fir_len=%i dft_length=%i Fp=%g Fs=%g Fn=%g att=%g %i/%i",
+    lsx_debug("fir_len=%i dft_length=%i Fp=%Lg Fs=%Lg Fn=%Lg att=%Lg %i/%i",
         num_taps, dft_length, Fp, Fs, Fn, att, L, M);
   }
   stage->fn = dft_stage_fn;
@@ -251,7 +247,7 @@ static void dft_stage_init(
 #include "rate_filters.h"
 
 typedef struct {
-  double     factor;
+  long double factor;
   uint64_t   samples_in, samples_out;
   int        num_stages;
   stage_t    * stages;
@@ -277,11 +273,11 @@ static void rate_init(
   rate_shared_t * shared,    /* Between channels (undergoing same rate change)*/
                             
   /* Public parameters:                                             Typically */
-  double factor,             /* Input rate divided by output rate.            */
-  double bits,               /* Required bit-accuracy (pass + stop)  16|20|28 */
-  double phase,              /* Linear/minimum etc. filter phase.       50    */
-  double bw_pc,              /* Pass-band % (0dB pt.) to preserve.   91.3|98.4*/
-  double anti_aliasing_pc,   /* % bandwidth without aliasing            100   */
+  long double factor,        /* Input rate divided by output rate.            */
+  long double bits,          /* Required bit-accuracy (pass + stop)  16|20|28 */
+  long double phase,         /* Linear/minimum etc. filter phase.       50    */
+  long double bw_pc,         /* Pass-band % (0dB pt.) to preserve.   91.3|98.4*/
+  long double anti_aliasing_pc, /* % bandwidth without aliasing            100   */
   rolloff_t rolloff,         /* Pass-band roll-off                    small   */
   sox_bool maintain_3dB_pt,  /*                                        true   */
                             
@@ -291,13 +287,13 @@ static void rate_init(
   int max_coefs_size,        /* k bytes of coefs to try to keep below.  400   */
   sox_bool noSmallIntOpt)    /* Disable small integer optimisations.  false   */
 {
-  double att = (bits + 1) * linear_to_dB(2.), attArb = att;    /* pass + stop */
-  double tbw0 = 1 - bw_pc / 100, Fs_a = 2 - anti_aliasing_pc / 100;
-  double arbM = factor, tbw_tighten = 1;
+  long double att = (bits + 1) * linear_to_dB(2.), attArb = att;    /* pass + stop */
+  long double tbw0 = 1 - bw_pc / 100, Fs_a = 2 - anti_aliasing_pc / 100;
+  long double arbM = factor, tbw_tighten = 1;
   int n = 0, i, preL = 1, preM = 1, shift = 0, arbL = 1, postL = 1, postM = 1;
   sox_bool upsample = sox_false, rational = sox_false, iOpt = !noSmallIntOpt;
   int mode = rolloff > rolloff_small? factor > 1 || bw_pc > LOW_Q_BW0_PC :
-    ceil(2 + (bits - 17) / 4);
+    ceill(2 + (bits - 17) / 4);
   stage_t * s;
 
   assert(factor > 0);
@@ -309,20 +305,20 @@ static void rate_init(
   p->factor = factor;
   if (bits) while (!n++) {                               /* Determine stages: */
     int try, L, M, x, maxL = interpolator > 0? 1 : mode? 2048 :
-      ceil(max_coefs_size * 1000. / (U100_l * sizeof(sample_t)));
-    double d, epsilon = 0, frac;
+      (int)ceill((long double)max_coefs_size * 1000. / (U100_l * sizeof(sample_t)));
+    long double d, epsilon = 0, frac;
     upsample = arbM < 1;
     for (i = arbM * .5, shift = 0; i >>= 1; arbM *= .5, ++shift);
     preM = upsample || (arbM > 1.5 && arbM < 2);
     postM = 1 + (arbM > 1 && preM), arbM /= postM;
     preL = 1 + (!preM && arbM < 2) + (upsample && mode), arbM *= preL;
     if ((frac = arbM - (int)arbM))
-      epsilon = fabs((uint32_t)(frac * MULT32 + .5) / (frac * MULT32) - 1);
+      epsilon = fabsl((uint32_t)(frac * MULT32 + .5) / (frac * MULT32) - 1);
     for (i = 1, rational = !frac; i <= maxL && !rational; ++i) {
       d = frac * i, try = d + .5;
-      if ((rational = fabs(try / d - 1) <= epsilon)) {    /* No long doubles! */
+      if ((rational = fabsl(try / d - 1) <= epsilon)) {
         if (try == i)
-          arbM = ceil(arbM), shift += arbM > 2, arbM /= 1 + (arbM > 2);
+          arbM = ceill(arbM), shift += arbM > 2, arbM /= 1 + (arbM > 2);
         else arbM = i * (int)arbM + try, arbL = i;
       }
     }
@@ -356,12 +352,12 @@ static void rate_init(
 
   if (have_pre_stage) {
     if (maintain_3dB_pt && have_post_stage) {    /* Trans. bands overlapping. */
-      double tbw3 = tbw0 * TO_3dB(att);               /* TODO: consider Fs_a. */
-      double x = ((2.1429e-4 - 5.2083e-7 * att) * att - .015863) * att + 3.95;
-      x = att * pow((tbw0 - tbw3) / (postM / (factor * postL) - 1 + tbw0), x);
+      long double tbw3 = tbw0 * TO_3dB(att);               /* TODO: consider Fs_a. */
+      long double x = ((2.1429e-4 - 5.2083e-7 * att) * att - .015863) * att + 3.95;
+      x = att * powl((tbw0 - tbw3) / (postM / (factor * postL) - 1 + tbw0), x);
       if (x > .035) {
         tbw_tighten = ((4.3074e-3 - 3.9121e-4 * x) * x - .040009) * x + 1.0014;
-        lsx_debug("x=%g tbw_tighten=%g", x, tbw_tighten);
+        lsx_debug("x=%g tbw_tighten=%g", (double)x, (double)tbw_tighten);
       }
     }
     dft_stage_init(0, 1 - tbw0 * tbw_tighten, Fs_a, preM? max(preL, preM) :
@@ -378,7 +374,7 @@ static void rate_init(
   else if (have_arb_stage) {                     /* Higher quality arb stage: */
     poly_fir_t const * f = &poly_firs[6*(upsample + !!preM) + mode - !upsample];
     int order, num_coefs = f->interp[0].scalar, phase_bits, phases, coefs_size;
-    double x = .5, at, Fp, Fs, Fn, mult = upsample? 1 : arbL / arbM;
+    long double x = .5L, at, Fp, Fs, Fn, mult = upsample? 1 : arbL / arbM;
     poly_fir1_t const * f1;
 
     Fn = !upsample && preM? x = arbM / arbL : 1;
@@ -396,7 +392,7 @@ static void rate_init(
       assert(f1->fn);
       if (i)
         arbM /= arbL, arbL = 1, rational = sox_false;
-      phase_bits = ceil(f1->scalar + log(mult)/log(2.));
+      phase_bits = ceill(f1->scalar + logl(mult)/logl(2.));
       phases = !rational? (1 << phase_bits) : arbL;
       if (!f->interp[0].scalar) {
         int phases0 = max(phases, 19), n0 = 0;
@@ -478,7 +474,7 @@ static sample_t const * rate_output(rate_t * p, sample_t * samples, size_t * n)
 static void rate_flush(rate_t * p)
 {
   fifo_t * fifo = &p->stages[p->num_stages].fifo;
-  uint64_t samples_out = p->samples_in / p->factor + .5;
+  long double samples_out = (long double)p->samples_in / p->factor + .5L;
   size_t remaining = samples_out > p->samples_out ?
       (size_t)(samples_out - p->samples_out) : 0;
   sample_t * buff = calloc(1024, sizeof(*buff));
@@ -619,7 +615,7 @@ static int create(sox_effect_t * effp, int argc, char **argv)
 static int start(sox_effect_t * effp)
 {
   priv_t * p = (priv_t *) effp->priv;
-  double out_rate = p->out_rate != 0 ? p->out_rate : effp->out_signal.rate;
+  long double out_rate = p->out_rate != 0 ? p->out_rate : (long double)effp->out_signal.rate;
 
   if (effp->in_signal.rate == out_rate)
     return SOX_EFF_NULL;

@@ -42,9 +42,11 @@
 #define PATH_HASH_SIZE 128
 #define PATH_HASH_MASK (PATH_HASH_SIZE - 1)
 
+typedef long double sdm_real_t;
+
 typedef struct LSX_ALIGN(32) sdm_filter {
-  const double  a[MAX_FILTER_ORDER];
-  const double  g[MAX_FILTER_ORDER];
+  const sdm_real_t  a[MAX_FILTER_ORDER];
+  const sdm_real_t  g[MAX_FILTER_ORDER];
   int32_t       order;
   unsigned      freq;
   const char   *name;
@@ -54,8 +56,8 @@ typedef struct LSX_ALIGN(32) sdm_filter {
 } sdm_filter_t;
 
 typedef struct LSX_ALIGN(32) sdm_state {
-  double        state[MAX_FILTER_ORDER];
-  double        cost;
+  sdm_real_t    state[MAX_FILTER_ORDER];
+  sdm_real_t    cost;
   uint32_t      path;
   uint8_t       next;
   uint8_t       hist;
@@ -83,7 +85,7 @@ struct sdm {
   unsigned      draining;
   unsigned      idx;
   const sdm_filter_t *filter;
-  double        prev_y;
+  sdm_real_t    prev_y;
   uint64_t      conv_fail;
   uint8_t       hist[2 * SDM_TRELLIS_MAX_NUM][SDM_TRELLIS_MAX_LAT / 8];
 };
@@ -975,16 +977,14 @@ static const sdm_filter_t *sdm_find_filter(const char *name, unsigned freq)
   return NULL;
 }
 
-#include "sdm_x86.h"
-
 #ifndef sdm_filter_calc
-static double sdm_filter_calc(const double *s, double *d,
-                              const sdm_filter_t *f,
-                              double x, double y)
+static sdm_real_t sdm_filter_calc(const sdm_real_t *s, sdm_real_t *d,
+                                  const sdm_filter_t *f,
+                                  sdm_real_t x, sdm_real_t y)
 {
-  const double *a = f->a;
-  const double *g = f->g;
-  double v;
+  const sdm_real_t *a = f->a;
+  const sdm_real_t *g = f->g;
+  sdm_real_t v;
   int i;
 
   d[0] = s[0] - g[0] * s[1] + x - y;
@@ -1004,19 +1004,19 @@ static double sdm_filter_calc(const double *s, double *d,
 
 #ifndef sdm_filter_calc2
 static void sdm_filter_calc2(sdm_state_t *src, sdm_state_t *dst,
-                             const sdm_filter_t *f, double x)
+                             const sdm_filter_t *f, sdm_real_t x)
 {
-  const double *a = f->a;
-  double v;
+  const sdm_real_t *a = f->a;
+  sdm_real_t v;
   int i;
 
-  v = sdm_filter_calc(src->state, dst[0].state, f, x, 0.0);
+  v = sdm_filter_calc(src->state, dst[0].state, f, x, 0.0L);
 
   for (i = 0; i < f->order; i++)
     dst[1].state[i] = dst[0].state[i];
 
-  dst[0].state[0] += 1.0;
-  dst[1].state[0] -= 1.0;
+  dst[0].state[0] += 1.0L;
+  dst[1].state[0] -= 1.0L;
 
   dst[0].cost = src->cost + sqr(v + a[0]);
   dst[1].cost = src->cost + sqr(v - a[0]);
@@ -1062,21 +1062,14 @@ static inline void sdm_hist_copy(sdm_t *p, unsigned d, unsigned s)
   memcpy(p->hist[d], p->hist[s], (size_t)(p->trellis_lat + 7) / 8);
 }
 
-static inline int64_t dbl2int64(double a)
-{
-  union { double d; int64_t i; } v;
-  v.d = a;
-  return v.i;
-}
-
 static inline int sdm_cmplt(sdm_state_t *a, sdm_state_t *b)
 {
-  return dbl2int64(a->cost) < dbl2int64(b->cost);
+  return a->cost < b->cost;
 }
 
 static inline int sdm_cmple(sdm_state_t *a, sdm_state_t *b)
 {
-  return dbl2int64(a->cost) <= dbl2int64(b->cost);
+  return a->cost <= b->cost;
 }
 
 static sdm_state_t *sdm_check_path(sdm_t *p, sdm_state_t *s)
@@ -1158,7 +1151,7 @@ static unsigned sdm_sort_cands(sdm_t *p, sdm_trellis_t *st)
 }
 
 static inline void sdm_step(sdm_t *p, sdm_state_t *cur, sdm_state_t *next,
-                            double x)
+                            sdm_real_t x)
 {
   const sdm_filter_t *f = p->filter;
   int i;
@@ -1173,11 +1166,11 @@ static inline void sdm_step(sdm_t *p, sdm_state_t *cur, sdm_state_t *next,
   }
 }
 
-static sox_sample_t sdm_sample_trellis(sdm_t *p, double x)
+static sox_sample_t sdm_sample_trellis(sdm_t *p, sdm_real_t x)
 {
   sdm_trellis_t *st_cur = &p->trellis[p->idx];
   sdm_trellis_t *st_next = &p->trellis[p->idx ^ 1];
-  double min_cost;
+  sdm_real_t min_cost;
   unsigned new_cands;
   unsigned next_pos;
   unsigned output;
@@ -1230,15 +1223,15 @@ static sox_sample_t sdm_sample_trellis(sdm_t *p, double x)
   return output ? SOX_SAMPLE_MAX : -SOX_SAMPLE_MAX;
 }
 
-static sox_sample_t sdm_sample(sdm_t *p, double x)
+static sox_sample_t sdm_sample(sdm_t *p, sdm_real_t x)
 {
   const sdm_filter_t *f = p->filter;
-  double *s0 = p->trellis[0].sdm[p->idx].state;
-  double *s1 = p->trellis[0].sdm[p->idx ^ 1].state;
-  double y, v;
+  sdm_real_t *s0 = p->trellis[0].sdm[p->idx].state;
+  sdm_real_t *s1 = p->trellis[0].sdm[p->idx ^ 1].state;
+  sdm_real_t y, v;
 
   v = sdm_filter_calc(s0, s1, f, x, p->prev_y);
-  y = signbit(v) ? -1.0 : 1.0;
+  y = signbit(v) ? -1.0L : 1.0L;
 
   p->idx ^= 1;
   p->prev_y = y;
@@ -1251,7 +1244,7 @@ int sdm_process(sdm_t *p, const sox_sample_t *ibuf, sox_sample_t *obuf,
 {
   sox_sample_t *out = obuf;
   size_t len = *ilen = min(*ilen, *olen);
-  double x;
+  sdm_real_t x;
 
   if (p->trellis_mask) {
     if (p->pending < p->trellis_lat) {
@@ -1259,17 +1252,17 @@ int sdm_process(sdm_t *p, const sox_sample_t *ibuf, sox_sample_t *obuf,
       p->pending += pre;
       len -= pre;
       while (pre--) {
-        x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
+        x = (sdm_real_t)*ibuf++ * (0.5L / (sdm_real_t)SOX_SAMPLE_MAX);
         sdm_sample_trellis(p, x);
       }
     }
     while (len--) {
-      x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
+      x = (sdm_real_t)*ibuf++ * (0.5L / (sdm_real_t)SOX_SAMPLE_MAX);
       *out++ = sdm_sample_trellis(p, x);
     }
   } else {
     while (len--) {
-      x = *ibuf++ * (0.5 / SOX_SAMPLE_MAX);
+      x = (sdm_real_t)*ibuf++ * (0.5L / (sdm_real_t)SOX_SAMPLE_MAX);
       *out++ = sdm_sample(p, x);
     }
   }

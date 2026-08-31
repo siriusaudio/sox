@@ -92,7 +92,7 @@ typedef struct stage {
   int        pre;       /* Number of past samples to store */
   int        pre_post;  /* pre + number of future samples to store */
   int        preload;   /* Number of zero samples to pre-load the fifo */
-  double     out_in_ratio; /* For buffer management. */
+  long double out_in_ratio; /* For buffer management. */
 
   /* For a stage with variable (run-time generated) filter coefs: */
   rate_shared_t * shared;
@@ -120,19 +120,21 @@ typedef struct stage {
 
 static void cubic_stage_fn(stage_t * p, fifo_t * output_fifo)
 {
-  int i, num_in = stage_occupancy(p), max_num_out = 1 + num_in*p->out_in_ratio;
+  int i;
+  size_t num_in = (size_t)stage_occupancy(p);
+  size_t max_num_out = (size_t)ceill(1 + (long double)num_in * p->out_in_ratio);
   sample_t const * input = stage_read_p(p);
   sample_t * output = fifo_reserve(output_fifo, max_num_out);
 
   for (i = 0; p->at.parts.integer < num_in; ++i, p->at.all += p->step.all) {
     sample_t const * s = input + p->at.parts.integer;
-    sample_t x = p->at.parts.fraction * (1 / MULT32);
-    sample_t b = .5*(s[1]+s[-1])-*s, a = (1/6.)*(s[2]-s[1]+s[-1]-*s-4*b);
-    sample_t c = s[1]-*s-a-b;
-    output[i] = ((a*x + b)*x + c)*x + *s;
+    long double x = (long double)p->at.parts.fraction / MULT32;
+    long double b = .5L * (s[1] + s[-1]) - *s;
+    long double a = (1 / 6.L) * (s[2] - s[1] + s[-1] - *s - 4 * b);
+    long double c = s[1] - *s - a - b;
+    output[i] = (sample_t)((((a * x) + b) * x + c) * x + *s);
   }
-  assert(max_num_out - i >= 0);
-  fifo_trim_by(output_fifo, max_num_out - i);
+  fifo_trim_by(output_fifo, max_num_out - (size_t)i);
   fifo_read(&p->fifo, p->at.parts.integer, NULL);
   p->at.parts.integer = 0;
 }
@@ -177,13 +179,16 @@ static void dft_stage_fn(stage_t * p, fifo_t * output_fifo)
       }
       lsx_safe_rdft(f->dft_length, 1, output);
     }
-    output[0] *= f->coefs[0];
+    output[0] = (sample_t)((long double)output[0] * f->coefs[0]);
     if (p->step.parts.integer > 0) {
-      output[1] *= f->coefs[1];
+      output[1] = (sample_t)((long double)output[1] * f->coefs[1]);
       for (i = 2; i < f->dft_length; i += 2) {
+        long double hi = output[i], lo = output[i + 1];
         tmp = output[i];
-        output[i  ] = f->coefs[i  ] * tmp - f->coefs[i+1] * output[i+1];
-        output[i+1] = f->coefs[i+1] * tmp + f->coefs[i  ] * output[i+1];
+        output[i  ] = (sample_t)((long double)f->coefs[i  ] * hi -
+                                 (long double)f->coefs[i + 1] * lo);
+        output[i+1] = (sample_t)((long double)f->coefs[i + 1] * hi +
+                                 (long double)f->coefs[i  ] * lo);
       }
       lsx_safe_rdft(f->dft_length, -1, output);
       if (p->step.parts.integer != 1) {
@@ -198,11 +203,15 @@ static void dft_stage_fn(stage_t * p, fifo_t * output_fifo)
     else { /* F-domain */
       int m = -p->step.parts.integer;
       for (i = 2; i < (f->dft_length >> m); i += 2) {
+        long double hi = output[i], lo = output[i + 1];
         tmp = output[i];
-        output[i  ] = f->coefs[i  ] * tmp - f->coefs[i+1] * output[i+1];
-        output[i+1] = f->coefs[i+1] * tmp + f->coefs[i  ] * output[i+1];
+        output[i  ] = (sample_t)((long double)f->coefs[i  ] * hi -
+                                 (long double)f->coefs[i + 1] * lo);
+        output[i+1] = (sample_t)((long double)f->coefs[i + 1] * hi +
+                                 (long double)f->coefs[i  ] * lo);
       }
-      output[1] = f->coefs[i] * output[i] - f->coefs[i+1] * output[i+1];
+      output[1] = (sample_t)((long double)f->coefs[i] * output[i] -
+                             (long double)f->coefs[i + 1] * output[i + 1]);
       lsx_safe_rdft(f->dft_length >> m, -1, output);
       fifo_trim_by(output_fifo, (((1 << m) - 1) * f->dft_length + overlap) >>m);
     }

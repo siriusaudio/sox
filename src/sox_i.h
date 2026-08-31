@@ -85,7 +85,7 @@ void lsx_prepare_spline3(double const * x, double const * y, int n,
 double lsx_spline3(double const * x, double const * y, double const * y_2d,
     int n, double x1);
 
-double lsx_bessel_I_0(double x);
+double lsx_bessel_I_0(long double x);
 int lsx_set_dft_length(int num_taps);
 void init_fft_cache(void);
 void clear_fft_cache(void);

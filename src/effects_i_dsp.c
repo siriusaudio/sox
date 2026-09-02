@@ -137,21 +137,21 @@ double lsx_spline3(double const * x, double const * y, double const * y_2d,
     ((a * a * a - a) * y_2d[i[0]] + (b * b * b - b) * y_2d[i[1]]) * d * d / 6;
 }
 
-double lsx_bessel_I_0(long double x)
+double lsx_bessel_I_0(double x)
 {
-  long double term = 1, sum = 1, last_sum, x2 = x / 2;
+  double term = 1, sum = 1, last_sum, x2 = x / 2;
   int i = 1;
   do {
-    long double y = x2 / i++;
+    double y = x2 / i++;
     last_sum = sum, sum += term *= y * y;
   } while (sum != last_sum);
-  return (double)sum;
+  return sum;
 }
 
 int lsx_set_dft_length(int num_taps) /* Set to 4 x nearest power of 2 */
 {      /* or half of that if danger of causing too many cache misses. */
   int min = sox_globals.log2_dft_min_size;
-  long double d = logl((long double)num_taps) / logl(2.L);
+  double d = log((double)num_taps) / log(2.);
   return 1 << range_limit((int)(d + 2.77), min, max((int)(d + 1.77), 17));
 }
 

@@ -1040,8 +1040,8 @@ static inline unsigned get_bit(uint8_t *p, unsigned i)
 
 static inline void put_bit(uint8_t *p, unsigned i, unsigned v)
 {
-  unsigned b = p[i >> 3];
-  unsigned s = i & 7;
+  int b = p[i >> 3];
+  int s = i & 7;
   b &= ~(1 << s);
   b |= v << s;
   p[i >> 3] = b;

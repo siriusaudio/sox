@@ -1850,17 +1850,17 @@ int sdm_process(sdm_t *p, const sox_sample_t *ibuf, sox_sample_t *obuf,
       p->pending += pre;
       len -= pre;
       while (pre--) {
-        x = *ibuf++ * (SOX_INPUT_SCALE / SOX_SAMPLE_MAX);
+        x = *ibuf++ * (SDM_INPUT_SCALE / SOX_SAMPLE_MAX);
         sdm_sample_trellis(p, x);
       }
     }
     while (len--) {
-      x = *ibuf++ * (SOX_INPUT_SCALE / SOX_SAMPLE_MAX);
+      x = *ibuf++ * (SDM_INPUT_SCALE / SOX_SAMPLE_MAX);
       *out++ = sdm_sample_trellis(p, x);
     }
   } else {
     while (len--) {
-      x = *ibuf++ * (SOX_INPUT_SCALE / SOX_SAMPLE_MAX);
+      x = *ibuf++ * (SDM_INPUT_SCALE / SOX_SAMPLE_MAX);
       *out++ = sdm_sample(p, x);
     }
   }
